@@ -3,6 +3,7 @@ use fuse::{
     Request,
     ReplyEntry,
     ReplyDirectory,
+    ReplyData,
     FileType,
     FileAttr,
     FUSE_ROOT_ID
@@ -115,10 +116,18 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                 panic!("[lookup] Invalid path component, only expected Normal.");
             }
         }
-        let size = 0;
+        let size = match node.dtype() {
+            nx::Type::Empty => 0,
+            nx::Type::Integer => unimplemented!(),
+            nx::Type::Float => unimplemented!(),
+            nx::Type::String => node.string().unwrap().as_bytes().len(),
+            nx::Type::Vector => unimplemented!(),
+            nx::Type::Bitmap => unimplemented!(),
+            nx::Type::Audio => unimplemented!(),
+        };
         let attr = FileAttr {
             ino: self.node_inode(node),
-            size: size,
+            size: size as u64,
             blocks: 1,
             atime: self.create_time,
             mtime: self.create_time,
@@ -133,6 +142,20 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             flags: 0
         };
         reply.entry(&TTL, &attr, 0);
+    }
+    fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, _size: u32,
+            reply: ReplyData) {
+        let node = self.inode_node_pairs.node(ino)
+                       .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
+        match node.dtype() {
+            nx::Type::Empty => reply.data(&[]),
+            nx::Type::Integer => unimplemented!(),
+            nx::Type::Float => unimplemented!(),
+            nx::Type::String => reply.data(&node.string().unwrap().as_bytes()[offset as usize..]),
+            nx::Type::Vector => unimplemented!(),
+            nx::Type::Bitmap => unimplemented!(),
+            nx::Type::Audio => unimplemented!(),
+        }
     }
     fn readdir(&mut self, _req: &Request, _ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
