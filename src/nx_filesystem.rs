@@ -4,6 +4,7 @@ use fuse::{
     ReplyEntry,
     ReplyDirectory,
     ReplyData,
+    ReplyAttr,
     FileType,
     FileAttr,
     FUSE_ROOT_ID
@@ -83,6 +84,33 @@ impl<'a> NxFilesystem<'a> {
             }
         }
     }
+    fn node_file_attr(&mut self, node: nx::Node<'a>) -> FileAttr {
+        let size = match node.dtype() {
+            nx::Type::Empty => 0,
+            nx::Type::Integer => unimplemented!(),
+            nx::Type::Float => unimplemented!(),
+            nx::Type::String => node.string().unwrap().as_bytes().len(),
+            nx::Type::Vector => unimplemented!(),
+            nx::Type::Bitmap => unimplemented!(),
+            nx::Type::Audio => unimplemented!(),
+        };
+        FileAttr {
+            ino: self.node_inode(node),
+            size: size as u64,
+            blocks: 1,
+            atime: self.create_time,
+            mtime: self.create_time,
+            ctime: self.create_time,
+            crtime: self.create_time,
+            kind: node_file_type(node),
+            perm: 0o644,
+            nlink: 1,
+            uid: 501,
+            gid: 20,
+            rdev: 0,
+            flags: 0
+        }
+    }
 }
 
 fn node_has_children(node: nx::Node) -> bool {
@@ -116,32 +144,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                 panic!("[lookup] Invalid path component, only expected Normal.");
             }
         }
-        let size = match node.dtype() {
-            nx::Type::Empty => 0,
-            nx::Type::Integer => unimplemented!(),
-            nx::Type::Float => unimplemented!(),
-            nx::Type::String => node.string().unwrap().as_bytes().len(),
-            nx::Type::Vector => unimplemented!(),
-            nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => unimplemented!(),
-        };
-        let attr = FileAttr {
-            ino: self.node_inode(node),
-            size: size as u64,
-            blocks: 1,
-            atime: self.create_time,
-            mtime: self.create_time,
-            ctime: self.create_time,
-            crtime: self.create_time,
-            kind: node_file_type(node),
-            perm: 0o644,
-            nlink: 1,
-            uid: 501,
-            gid: 20,
-            rdev: 0,
-            flags: 0
-        };
-        reply.entry(&TTL, &attr, 0);
+        reply.entry(&TTL, &self.node_file_attr(node), 0);
+    }
+    fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
+        let node = self.inode_node_pairs.node(ino)
+                       .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
+        reply.attr(&TTL, &self.node_file_attr(node));
     }
     fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, _size: u32,
             reply: ReplyData) {
