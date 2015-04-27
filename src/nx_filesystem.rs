@@ -92,7 +92,7 @@ impl<'a> NxFilesystem<'a> {
             nx::Type::String => node.string().unwrap().as_bytes().len(),
             nx::Type::Vector => unimplemented!(),
             nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => unimplemented!(),
+            nx::Type::Audio => node.audio().unwrap().len(),
         };
         FileAttr {
             ino: self.node_inode(node),
@@ -153,16 +153,29 @@ impl<'a> Filesystem for NxFilesystem<'a> {
     }
     fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, _size: u32,
             reply: ReplyData) {
+        println!("[read] ino: {}, offset: {}, size: {}", ino, offset, _size);
         let node = self.inode_node_pairs.node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         match node.dtype() {
             nx::Type::Empty => reply.data(&[]),
             nx::Type::Integer => unimplemented!(),
             nx::Type::Float => unimplemented!(),
-            nx::Type::String => reply.data(&node.string().unwrap().as_bytes()[offset as usize..]),
+            nx::Type::String => {
+                let data = node.string().unwrap().as_bytes();
+                let from = offset as usize;
+                let to = ::std::cmp::min(from + _size as usize, data.len());
+                println!("from {}, to {}, data.len {}", from, to, data.len());
+                reply.data(&data[from..to]);
+            },
             nx::Type::Vector => unimplemented!(),
             nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => unimplemented!(),
+            nx::Type::Audio => {
+                let data = node.audio().unwrap();
+                let from = offset as usize;
+                let to = ::std::cmp::min(from + _size as usize, data.len());
+                println!("from {}, to {}, data.len {}", from, to, data.len());
+                reply.data(&data[from..to]);
+            },
         }
     }
     fn readdir(&mut self, _req: &Request, _ino: u64, _fh: u64, offset: u64,
