@@ -4,7 +4,11 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-nx = "*"
-fuse = "*"
 time = "*"
 libc = "*"
+
+[dependencies.fuse]
+git = "https://github.com/zargony/rust-fuse.git"
+
+[dependencies.nx]
+git = "https://github.com/NoLifeDev/nx-rs.git"

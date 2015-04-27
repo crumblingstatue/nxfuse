@@ -2,16 +2,16 @@
 name = "nxfuse"
 version = "0.1.0"
 dependencies = [
- "fuse 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuse 0.2.6 (git+https://github.com/zargony/rust-fuse.git)",
  "libc 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "nx 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nx 0.2.3 (git+https://github.com/NoLifeDev/nx-rs.git)",
  "time 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "fuse"
 version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/zargony/rust-fuse.git#7e801a0e8600c974f66a0dee2071697aa5cc5005"
 dependencies = [
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -37,14 +37,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "mmap"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tempdir 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "nx"
 version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/NoLifeDev/nx-rs.git#e3a121ff43b2322cddfa531e0ce452a133ea09df"
+dependencies = [
+ "mmap 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "pkg-config"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "rand"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "tempdir"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "rand 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "time"
