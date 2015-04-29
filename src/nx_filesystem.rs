@@ -32,7 +32,7 @@ struct InodeNodePairVec<'a> {
 }
 
 impl<'a> InodeNodePairVec<'a> {
-    fn new() -> InodeNodePairVec<'a> {
+    fn new() -> Self {
         InodeNodePairVec {
             vec: Vec::new()
         }
@@ -55,7 +55,7 @@ impl<'a> InodeNodePairVec<'a> {
 }
 
 impl<'a> NxFilesystem<'a> {
-    pub fn new_with_nx_file(nx_file: &'a nx::File) -> NxFilesystem {
+    pub fn new_with_nx_file(nx_file: &'a nx::File) -> Self {
         let pairs = InodeNodePairVec::new();
         let mut fs = NxFilesystem {
             nx_file: nx_file,
