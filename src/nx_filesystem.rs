@@ -92,7 +92,7 @@ impl<'a> NxFilesystem<'a> {
             nx::Type::String => node.string().unwrap().as_bytes().len(),
             nx::Type::Vector => unimplemented!(),
             nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => node.audio().unwrap().len(),
+            nx::Type::Audio => node.audio().unwrap().data().len(),
         };
         FileAttr {
             ino: self.node_inode(node),
@@ -170,7 +170,8 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             nx::Type::Vector => unimplemented!(),
             nx::Type::Bitmap => unimplemented!(),
             nx::Type::Audio => {
-                let data = node.audio().unwrap();
+                let audio = node.audio().unwrap();
+                let data = audio.data();
                 let from = offset as usize;
                 let to = ::std::cmp::min(from + _size as usize, data.len());
                 println!("from {}, to {}, data.len {}", from, to, data.len());
