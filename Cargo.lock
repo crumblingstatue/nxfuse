@@ -48,7 +48,7 @@ dependencies = [
 [[package]]
 name = "nx"
 version = "0.2.3"
-source = "git+https://github.com/NoLifeDev/nx-rs.git#e3a121ff43b2322cddfa531e0ce452a133ea09df"
+source = "git+https://github.com/NoLifeDev/nx-rs.git#a09f7a7634fc1771a6258e70b1bd4c987f5b23ab"
 dependencies = [
  "mmap 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
