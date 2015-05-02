@@ -6,8 +6,8 @@ Use cases:
 - Maplestory jukebox
   
   ```
-  nxfuse Data.nx mountpoint/
-  mpv mountpoint/
+  nxfuse ~/other/Data.nx mountpoint/ > /dev/null &
+  mpv mountpoint/Sound/
   ```
   
   Isn't that neat?
