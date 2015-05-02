@@ -6,7 +6,7 @@ Use cases:
 - Maplestory jukebox
   
   ```
-  nxfuse ~/other/Data.nx mountpoint/ > /dev/null &
+  nxfuse Data.nx mountpoint/ > /dev/null &
   mpv mountpoint/Sound/
   ```
   
