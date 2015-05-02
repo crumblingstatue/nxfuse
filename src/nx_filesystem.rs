@@ -54,6 +54,18 @@ impl<'a> InodeNodePairVec<'a> {
     }
 }
 
+fn with_node_data<T: FnOnce(&[u8])>(node: nx::Node, func: T) {
+    match node.dtype() {
+        nx::Type::Empty => func(&[]),
+        nx::Type::Integer => unimplemented!(),
+        nx::Type::Float => unimplemented!(),
+        nx::Type::String => func(node.string().unwrap().as_bytes()),
+        nx::Type::Vector => unimplemented!(),
+        nx::Type::Bitmap => unimplemented!(),
+        nx::Type::Audio => func(node.audio().unwrap().data()),
+    };
+}
+
 impl<'a> NxFilesystem<'a> {
     pub fn new_with_nx_file(nx_file: &'a nx::File) -> Self {
         let pairs = InodeNodePairVec::new();
@@ -85,15 +97,8 @@ impl<'a> NxFilesystem<'a> {
         }
     }
     fn node_file_attr(&mut self, node: nx::Node<'a>) -> FileAttr {
-        let size = match node.dtype() {
-            nx::Type::Empty => 0,
-            nx::Type::Integer => unimplemented!(),
-            nx::Type::Float => unimplemented!(),
-            nx::Type::String => node.string().unwrap().as_bytes().len(),
-            nx::Type::Vector => unimplemented!(),
-            nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => node.audio().unwrap().data().len(),
-        };
+        let mut size = 0;
+        with_node_data(node, |d| size = d.len());
         FileAttr {
             ino: self.node_inode(node),
             size: size as u64,
@@ -156,28 +161,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
         println!("[read] ino: {}, offset: {}, size: {}", ino, offset, _size);
         let node = self.inode_node_pairs.node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
-        match node.dtype() {
-            nx::Type::Empty => reply.data(&[]),
-            nx::Type::Integer => unimplemented!(),
-            nx::Type::Float => unimplemented!(),
-            nx::Type::String => {
-                let data = node.string().unwrap().as_bytes();
-                let from = offset as usize;
-                let to = ::std::cmp::min(from + _size as usize, data.len());
-                println!("from {}, to {}, data.len {}", from, to, data.len());
-                reply.data(&data[from..to]);
-            },
-            nx::Type::Vector => unimplemented!(),
-            nx::Type::Bitmap => unimplemented!(),
-            nx::Type::Audio => {
-                let audio = node.audio().unwrap();
-                let data = audio.data();
-                let from = offset as usize;
-                let to = ::std::cmp::min(from + _size as usize, data.len());
-                println!("from {}, to {}, data.len {}", from, to, data.len());
-                reply.data(&data[from..to]);
-            },
-        }
+        with_node_data(node, |data| {
+            let from = offset as usize;
+            let to = ::std::cmp::min(from + _size as usize, data.len());
+            println!("from {}, to {}, data.len {}", from, to, data.len());
+            reply.data(&data[from..to]);
+        });
     }
     fn readdir(&mut self, _req: &Request, _ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
