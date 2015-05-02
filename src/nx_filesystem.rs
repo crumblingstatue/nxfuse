@@ -54,7 +54,7 @@ impl<'a> InodeNodePairVec<'a> {
     }
 }
 
-fn with_node_data<T: FnOnce(&[u8])>(node: nx::Node, func: T) {
+fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
     match node.dtype() {
         nx::Type::Empty => func(&[]),
         nx::Type::Integer => unimplemented!(),
@@ -63,7 +63,7 @@ fn with_node_data<T: FnOnce(&[u8])>(node: nx::Node, func: T) {
         nx::Type::Vector => unimplemented!(),
         nx::Type::Bitmap => unimplemented!(),
         nx::Type::Audio => func(node.audio().unwrap().data()),
-    };
+    }
 }
 
 impl<'a> NxFilesystem<'a> {
@@ -97,8 +97,7 @@ impl<'a> NxFilesystem<'a> {
         }
     }
     fn node_file_attr(&mut self, node: nx::Node<'a>) -> FileAttr {
-        let mut size = 0;
-        with_node_data(node, |d| size = d.len());
+        let size = with_node_data(node, |d| d.len());
         FileAttr {
             ino: self.node_inode(node),
             size: size as u64,
