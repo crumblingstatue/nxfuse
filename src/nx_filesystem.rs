@@ -57,11 +57,14 @@ impl<'a> InodeNodePairVec<'a> {
 fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
     match node.dtype() {
         nx::Type::Empty => func(&[]),
-        nx::Type::Integer => unimplemented!(),
-        nx::Type::Float => unimplemented!(),
+        nx::Type::Integer => func(&node.integer().unwrap().to_string().as_bytes()),
+        nx::Type::Float => func(&node.float().unwrap().to_string().as_bytes()),
         nx::Type::String => func(node.string().unwrap().as_bytes()),
-        nx::Type::Vector => unimplemented!(),
-        nx::Type::Bitmap => unimplemented!(),
+        nx::Type::Vector => {
+            let (x, y) = node.vector().unwrap();
+            func(format!("({}, {})", x, y).as_bytes())
+        },
+        nx::Type::Bitmap => func(b"Reading bitmap nodes is not yet implemented, sorry :/"),
         nx::Type::Audio => func(node.audio().unwrap().data()),
     }
 }
