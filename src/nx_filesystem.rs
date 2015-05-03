@@ -179,7 +179,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             for (i, child) in node_to_read.iter().enumerate() {
                 let file_type = node_file_type(child);
                 let inode = self.node_inode(child);
-                reply.add(inode, i as u64, file_type, child.name());
+                reply.add(inode, (i + 1) as u64, file_type, child.name());
             }
         }
         reply.ok();
