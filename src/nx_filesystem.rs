@@ -172,7 +172,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
     }
     fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
-        println!("[readdir] ino: {}, offset: {}", offset, ino);
+        println!("[readdir] ino: {}, offset: {}", ino, offset);
         // Ignore inode 0
         if ino == 0 {
             reply.error(ENOENT);
