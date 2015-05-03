@@ -158,29 +158,29 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         reply.attr(&TTL, &self.node_file_attr(node));
     }
-    fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, _size: u32,
+    fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, size: u32,
             reply: ReplyData) {
-        println!("[read] ino: {}, offset: {}, size: {}", ino, offset, _size);
+        println!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
         let node = self.inode_node_pairs.node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         with_node_data(node, |data| {
             let from = offset as usize;
-            let to = ::std::cmp::min(from + _size as usize, data.len());
+            let to = ::std::cmp::min(from + size as usize, data.len());
             println!("from {}, to {}, data.len {}", from, to, data.len());
             reply.data(&data[from..to]);
         });
     }
-    fn readdir(&mut self, _req: &Request, _ino: u64, _fh: u64, offset: u64,
+    fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
-        println!("[readdir] ino: {}, offset: {}", offset, _ino);
+        println!("[readdir] ino: {}, offset: {}", offset, ino);
         // Ignore inode 0
-        if _ino == 0 {
+        if ino == 0 {
             reply.error(ENOENT);
             return;
         }
         // For some reason we assert here that we are at offset 0
         if offset == 0 {
-            let node_to_read = self.inode_node_pairs.node(_ino)
+            let node_to_read = self.inode_node_pairs.node(ino)
                                .expect("Trying to read nonexistent dir");
             for (i, child) in node_to_read.iter().enumerate() {
                 let file_type = node_file_type(child);
