@@ -173,12 +173,6 @@ impl<'a> Filesystem for NxFilesystem<'a> {
     fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
         println!("[readdir] ino: {}, offset: {}", ino, offset);
-        // Ignore inode 0
-        if ino == 0 {
-            reply.error(ENOENT);
-            return;
-        }
-        // For some reason we assert here that we are at offset 0
         if offset == 0 {
             let node_to_read = self.inode_node_pairs.node(ino)
                                .expect("Trying to read nonexistent dir");
