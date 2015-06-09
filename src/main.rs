@@ -2,6 +2,8 @@ extern crate nx;
 extern crate fuse;
 extern crate libc;
 extern crate time;
+#[macro_use]
+extern crate debug;
 
 mod nx_filesystem;
 

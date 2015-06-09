@@ -2,11 +2,17 @@
 name = "nxfuse"
 version = "0.1.0"
 dependencies = [
+ "debugln 0.0.1 (git+https://github.com/crumblingstatue/rust-debug.git)",
  "fuse 0.2.6 (git+https://github.com/zargony/rust-fuse.git)",
  "libc 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nx 0.2.3 (git+https://github.com/NoLifeDev/nx-rs.git)",
  "time 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "debugln"
+version = "0.0.1"
+source = "git+https://github.com/crumblingstatue/rust-debug.git#a394d28b544abc04fa267d3b0af191ef6861256d"
 
 [[package]]
 name = "fuse"

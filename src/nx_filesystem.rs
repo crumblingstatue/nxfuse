@@ -142,7 +142,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                 node = match node.get(name) {
                     Some(node) => node,
                     None => {
-                        println!("[lookup] Couldn't find node with name \"{}\"", name);
+                        debugln!("[lookup] Couldn't find node with name \"{}\"", name);
                         reply.error(ENOENT);
                         return;
                     }
@@ -160,19 +160,19 @@ impl<'a> Filesystem for NxFilesystem<'a> {
     }
     fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, size: u32,
             reply: ReplyData) {
-        println!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
+        debugln!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
         let node = self.inode_node_pairs.node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         with_node_data(node, |data| {
             let from = offset as usize;
             let to = ::std::cmp::min(from + size as usize, data.len());
-            println!("from {}, to {}, data.len {}", from, to, data.len());
+            debugln!("from {}, to {}, data.len {}", from, to, data.len());
             reply.data(&data[from..to]);
         });
     }
     fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64,
                mut reply: ReplyDirectory) {
-        println!("[readdir] ino: {}, offset: {}", ino, offset);
+        debugln!("[readdir] ino: {}, offset: {}", ino, offset);
         if offset == 0 {
             let node_to_read = self.inode_node_pairs.node(ino)
                                .expect("Trying to read nonexistent dir");

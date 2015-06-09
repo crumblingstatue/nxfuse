@@ -12,3 +12,6 @@ git = "https://github.com/zargony/rust-fuse.git"
 
 [dependencies.nx]
 git = "https://github.com/NoLifeDev/nx-rs.git"
+
+[dependencies.debugln]
+git = "https://github.com/crumblingstatue/rust-debug.git"
