@@ -1,14 +1,5 @@
-use fuse::{
-    Filesystem,
-    Request,
-    ReplyEntry,
-    ReplyDirectory,
-    ReplyData,
-    ReplyAttr,
-    FileType,
-    FileAttr,
-    FUSE_ROOT_ID
-};
+use fuse::{Filesystem, Request, ReplyEntry, ReplyDirectory, ReplyData, ReplyAttr, FileType,
+           FileAttr, FUSE_ROOT_ID};
 use std::path::{Path, Component};
 use libc::ENOENT;
 use nx::{self, GenericNode};
@@ -19,23 +10,21 @@ pub struct NxFilesystem<'a> {
     inode_node_pairs: InodeNodePairVec<'a>,
     /// Used to assign a new unique inode to nx nodes that don't have one yet
     inode_counter: u64,
-    create_time: Timespec
+    create_time: Timespec,
 }
 
 struct InodeNodePair<'a> {
     inode: u64,
-    node: nx::Node<'a>
+    node: nx::Node<'a>,
 }
 
 struct InodeNodePairVec<'a> {
-    vec: Vec<InodeNodePair<'a>>
+    vec: Vec<InodeNodePair<'a>>,
 }
 
 impl<'a> InodeNodePairVec<'a> {
     fn new() -> Self {
-        InodeNodePairVec {
-            vec: Vec::new()
-        }
+        InodeNodePairVec { vec: Vec::new() }
     }
     fn push(&mut self, pair: InodeNodePair<'a>) {
         self.vec.push(pair);
@@ -43,13 +32,13 @@ impl<'a> InodeNodePairVec<'a> {
     fn node(&self, inode: u64) -> Option<nx::Node<'a>> {
         match self.vec.iter().find(|p| p.inode == inode) {
             Some(pair) => Some(pair.node),
-            None => None
+            None => None,
         }
     }
     fn inode(&self, node: nx::Node) -> Option<u64> {
         match self.vec.iter().find(|p| p.node == node) {
             Some(pair) => Some(pair.inode),
-            None => None
+            None => None,
         }
     }
 }
@@ -63,7 +52,7 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
         nx::Type::Vector => {
             let (x, y) = node.vector().unwrap();
             func(format!("({}, {})", x, y).as_bytes())
-        },
+        }
         nx::Type::Bitmap => func(b"Reading bitmap nodes is not yet implemented, sorry :/"),
         nx::Type::Audio => func(node.audio().unwrap().data()),
     }
@@ -76,10 +65,10 @@ impl<'a> NxFilesystem<'a> {
             nx_file: nx_file,
             inode_node_pairs: pairs,
             inode_counter: FUSE_ROOT_ID + 1,
-            create_time: time::get_time()
+            create_time: time::get_time(),
         };
         // Add root node
-        fs.inode_node_pairs.push(InodeNodePair{ inode: FUSE_ROOT_ID, node: fs.nx_file.root() });
+        fs.inode_node_pairs.push(InodeNodePair { inode: FUSE_ROOT_ID, node: fs.nx_file.root() });
         fs
     }
     fn new_inode(&mut self) -> u64 {
@@ -94,7 +83,7 @@ impl<'a> NxFilesystem<'a> {
             // Doesn't have an inode yet, generate one, and insert it to pairs
             None => {
                 let inode = self.new_inode();
-                self.inode_node_pairs.push(InodeNodePair{ inode: inode, node: node });
+                self.inode_node_pairs.push(InodeNodePair { inode: inode, node: node });
                 inode
             }
         }
@@ -115,7 +104,7 @@ impl<'a> NxFilesystem<'a> {
             uid: 501,
             gid: 20,
             rdev: 0,
-            flags: 0
+            flags: 0,
         }
     }
 }
@@ -129,7 +118,7 @@ const TTL: Timespec = Timespec { sec: 1, nsec: 0 };
 fn node_file_type(node: nx::Node) -> FileType {
     match node_has_children(node) {
         true => FileType::Directory,
-        false => FileType::RegularFile
+        false => FileType::RegularFile,
     }
 }
 
@@ -154,28 +143,41 @@ impl<'a> Filesystem for NxFilesystem<'a> {
         reply.entry(&TTL, &self.node_file_attr(node), 0);
     }
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
-        let node = self.inode_node_pairs.node(ino)
+        let node = self.inode_node_pairs
+                       .node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         reply.attr(&TTL, &self.node_file_attr(node));
     }
-    fn read(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64, size: u32,
+    fn read(&mut self,
+            _req: &Request,
+            ino: u64,
+            _fh: u64,
+            offset: u64,
+            size: u32,
             reply: ReplyData) {
         debugln!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
-        let node = self.inode_node_pairs.node(ino)
+        let node = self.inode_node_pairs
+                       .node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
-        with_node_data(node, |data| {
-            let from = offset as usize;
-            let to = ::std::cmp::min(from + size as usize, data.len());
-            debugln!("from {}, to {}, data.len {}", from, to, data.len());
-            reply.data(&data[from..to]);
-        });
+        with_node_data(node,
+                       |data| {
+                           let from = offset as usize;
+                           let to = ::std::cmp::min(from + size as usize, data.len());
+                           debugln!("from {}, to {}, data.len {}", from, to, data.len());
+                           reply.data(&data[from..to]);
+                       });
     }
-    fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64, offset: u64,
+    fn readdir(&mut self,
+               _req: &Request,
+               ino: u64,
+               _fh: u64,
+               offset: u64,
                mut reply: ReplyDirectory) {
         debugln!("[readdir] ino: {}, offset: {}", ino, offset);
         if offset == 0 {
-            let node_to_read = self.inode_node_pairs.node(ino)
-                               .expect("Trying to read nonexistent dir");
+            let node_to_read = self.inode_node_pairs
+                                   .node(ino)
+                                   .expect("Trying to read nonexistent dir");
             for (i, child) in node_to_read.iter().enumerate() {
                 let file_type = node_file_type(child);
                 let inode = self.node_inode(child);
