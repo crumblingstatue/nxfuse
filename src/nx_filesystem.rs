@@ -5,6 +5,8 @@ use libc::ENOENT;
 use nx::{self, GenericNode};
 use time::{self, Timespec};
 use std::collections::HashMap;
+use image::png::PNGEncoder;
+use image::ColorType;
 
 pub struct NxFilesystem<'a> {
     nx_file: &'a nx::File,
@@ -83,7 +85,17 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             let (x, y) = node.vector().unwrap();
             func(format!("({}, {})", x, y).as_bytes())
         }
-        nx::Type::Bitmap => func(b"Reading bitmap nodes is not yet implemented, sorry :/"),
+        nx::Type::Bitmap => {
+            let bitmap = node.bitmap().unwrap();
+            let mut buf = vec![0; bitmap.len() as usize];
+            bitmap.data(&mut buf);
+            let mut png_data = Vec::<u8>::new();
+            {
+                let enc = PNGEncoder::new(&mut png_data);
+                enc.encode(&buf, bitmap.width() as u32, bitmap.height() as u32, ColorType::RGBA(8)).unwrap();
+            }
+            func(&png_data)
+        },
         nx::Type::Audio => func(node.audio().unwrap().data()),
     }
 }

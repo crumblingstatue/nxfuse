@@ -4,6 +4,7 @@ extern crate libc;
 extern crate time;
 #[macro_use]
 extern crate debug;
+extern crate image;
 
 mod nx_filesystem;
 
