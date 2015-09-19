@@ -8,7 +8,6 @@ time = "*"
 libc = "*"
 
 [dependencies.fuse]
-git = "https://github.com/crumblingstatue/rust-fuse.git"
 
 [dependencies.nx]
 git = "https://github.com/NoLifeDev/nx-rs.git"

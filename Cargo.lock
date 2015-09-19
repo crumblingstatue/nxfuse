@@ -3,7 +3,7 @@ name = "nxfuse"
 version = "0.1.0"
 dependencies = [
  "debugln 0.0.1 (git+https://github.com/crumblingstatue/rust-debug.git)",
- "fuse 0.2.6 (git+https://github.com/crumblingstatue/rust-fuse.git)",
+ "fuse 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "nx 0.2.4 (git+https://github.com/NoLifeDev/nx-rs.git)",
  "time 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -30,9 +30,10 @@ source = "git+https://github.com/crumblingstatue/rust-debug.git#a394d28b544abc04
 
 [[package]]
 name = "fuse"
-version = "0.2.6"
-source = "git+https://github.com/crumblingstatue/rust-fuse.git#de8ef39820f58ebc440bb47a4d3d6b16fb7b3295"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "thread-scoped 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
