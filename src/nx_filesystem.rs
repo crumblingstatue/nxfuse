@@ -7,26 +7,26 @@ use time::{self, Timespec};
 
 pub struct NxFilesystem<'a> {
     nx_file: &'a nx::File,
-    inode_node_pairs: InodeNodePairVec<'a>,
+    entries: Entries<'a>,
     /// Used to assign a new unique inode to nx nodes that don't have one yet
     inode_counter: u64,
     create_time: Timespec,
 }
 
-struct InodeNodePair<'a> {
+struct Entry<'a> {
     inode: u64,
     node: nx::Node<'a>,
 }
 
-struct InodeNodePairVec<'a> {
-    vec: Vec<InodeNodePair<'a>>,
+struct Entries<'a> {
+    vec: Vec<Entry<'a>>,
 }
 
-impl<'a> InodeNodePairVec<'a> {
+impl<'a> Entries<'a> {
     fn new() -> Self {
-        InodeNodePairVec { vec: Vec::new() }
+        Entries { vec: Vec::new() }
     }
-    fn push(&mut self, pair: InodeNodePair<'a>) {
+    fn push(&mut self, pair: Entry<'a>) {
         self.vec.push(pair);
     }
     fn node(&self, inode: u64) -> Option<nx::Node<'a>> {
@@ -60,15 +60,15 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
 
 impl<'a> NxFilesystem<'a> {
     pub fn new_with_nx_file(nx_file: &'a nx::File) -> Self {
-        let pairs = InodeNodePairVec::new();
+        let pairs = Entries::new();
         let mut fs = NxFilesystem {
             nx_file: nx_file,
-            inode_node_pairs: pairs,
+            entries: pairs,
             inode_counter: FUSE_ROOT_ID + 1,
             create_time: time::get_time(),
         };
         // Add root node
-        fs.inode_node_pairs.push(InodeNodePair { inode: FUSE_ROOT_ID, node: fs.nx_file.root() });
+        fs.entries.push(Entry { inode: FUSE_ROOT_ID, node: fs.nx_file.root() });
         fs
     }
     fn new_inode(&mut self) -> u64 {
@@ -78,12 +78,12 @@ impl<'a> NxFilesystem<'a> {
     }
     /// Get inode for a node, generate inode if not present
     fn node_inode(&mut self, node: nx::Node<'a>) -> u64 {
-        match self.inode_node_pairs.inode(node) {
+        match self.entries.inode(node) {
             Some(inode) => inode,
             // Doesn't have an inode yet, generate one, and insert it to pairs
             None => {
                 let inode = self.new_inode();
-                self.inode_node_pairs.push(InodeNodePair { inode: inode, node: node });
+                self.entries.push(Entry { inode: inode, node: node });
                 inode
             }
         }
@@ -124,7 +124,7 @@ fn node_file_type(node: nx::Node) -> FileType {
 
 impl<'a> Filesystem for NxFilesystem<'a> {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &Path, reply: ReplyEntry) {
-        let mut node = self.inode_node_pairs.node(parent).expect("[lookup] Invalid parent");
+        let mut node = self.entries.node(parent).expect("[lookup] Invalid parent");
         for c in name.components() {
             if let Component::Normal(name) = c {
                 let name = name.to_str().expect("Path component not valid utf-8");
@@ -143,7 +143,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
         reply.entry(&TTL, &self.node_file_attr(node), 0);
     }
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
-        let node = self.inode_node_pairs
+        let node = self.entries
                        .node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         reply.attr(&TTL, &self.node_file_attr(node));
@@ -156,7 +156,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             size: u32,
             reply: ReplyData) {
         debugln!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
-        let node = self.inode_node_pairs
+        let node = self.entries
                        .node(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         with_node_data(node,
@@ -175,7 +175,7 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                mut reply: ReplyDirectory) {
         debugln!("[readdir] ino: {}, offset: {}", ino, offset);
         if offset == 0 {
-            let node_to_read = self.inode_node_pairs
+            let node_to_read = self.entries
                                    .node(ino)
                                    .expect("Trying to read nonexistent dir");
             for (i, child) in node_to_read.iter().enumerate() {
