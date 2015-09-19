@@ -15,6 +15,13 @@ pub struct NxFilesystem<'a> {
 
 struct Entry<'a> {
     inode: u64,
+    /// Optional data inode for entries that have both data, and children.
+    ///
+    /// In such cases there is a folder with the name of the node (e.g. `foo`), and
+    /// a file with the data and _data appended (e.g. `foo_data`).
+    ///
+    /// This field represents the inode for that optional "foo_data" file.
+    opt_data_inode: Option<u64>,
     node: nx::Node<'a>,
 }
 
@@ -68,7 +75,8 @@ impl<'a> NxFilesystem<'a> {
             create_time: time::get_time(),
         };
         // Add root node
-        fs.entries.push(Entry { inode: FUSE_ROOT_ID, node: fs.nx_file.root() });
+        fs.entries.push(Entry { inode: FUSE_ROOT_ID, node: fs.nx_file.root(),
+                                opt_data_inode: None });
         fs
     }
     fn new_inode(&mut self) -> u64 {
@@ -83,7 +91,8 @@ impl<'a> NxFilesystem<'a> {
             // Doesn't have an inode yet, generate one, and insert it to pairs
             None => {
                 let inode = self.new_inode();
-                self.entries.push(Entry { inode: inode, node: node });
+                self.entries.push(Entry { inode: inode, node: node,
+                                          opt_data_inode: None });
                 inode
             }
         }
