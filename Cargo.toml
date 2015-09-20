@@ -6,7 +6,7 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 [dependencies]
 time = "*"
 libc = "*"
-image = "0.3.12"
+byteorder = "*"
 
 [dependencies.fuse]
 

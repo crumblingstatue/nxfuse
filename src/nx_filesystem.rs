@@ -5,8 +5,7 @@ use libc::ENOENT;
 use nx::{self, GenericNode};
 use time::{self, Timespec};
 use std::collections::HashMap;
-use image::png::PNGEncoder;
-use image::ColorType;
+use byteorder::{LittleEndian, BigEndian, WriteBytesExt};
 
 pub struct NxFilesystem<'a> {
     nx_file: &'a nx::File,
@@ -87,15 +86,38 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             func(format!("({}, {})", x, y).as_bytes())
         }
         nx::Type::Bitmap => {
+            use std::io::Write;
             let bitmap = node.bitmap().unwrap();
-            let mut buf = vec![0; bitmap.len() as usize];
+            let len = bitmap.len();
+            let mut buf = vec![0; len as usize];
             bitmap.data(&mut buf);
-            let mut png_data = Vec::<u8>::new();
-            {
-                let enc = PNGEncoder::new(&mut png_data);
-                enc.encode(&buf, bitmap.width() as u32, bitmap.height() as u32, ColorType::RGBA(8)).unwrap();
-            }
-            func(&png_data)
+            let offset = 2 + (3 * 4) + 56;
+            let size_bytes = offset + len;
+            let mut bmp_data = Vec::<u8>::with_capacity(size_bytes as usize);
+            // Write bmp header
+            bmp_data.write(&[0x42, 0x4D]).unwrap();
+            bmp_data.write_u32::<LittleEndian>(size_bytes).unwrap();
+            // Zero out the reserved section
+            bmp_data.write_u32::<LittleEndian>(0).unwrap();
+            bmp_data.write_u32::<LittleEndian>(offset).unwrap();
+            // Write bitmapinfoheader
+            bmp_data.write_u32::<LittleEndian>(56).unwrap();
+            bmp_data.write_i32::<LittleEndian>(bitmap.width() as i32).unwrap();
+            bmp_data.write_i32::<LittleEndian>(-(bitmap.height() as i32)).unwrap();
+            bmp_data.write_u16::<LittleEndian>(1).unwrap();
+            bmp_data.write_u16::<LittleEndian>(32).unwrap();
+            bmp_data.write_u32::<LittleEndian>(3).unwrap();
+            bmp_data.write_u32::<LittleEndian>(len).unwrap();
+            bmp_data.write_i32::<LittleEndian>(2835).unwrap();
+            bmp_data.write_i32::<LittleEndian>(2835).unwrap();
+            bmp_data.write_i32::<LittleEndian>(0).unwrap();
+            bmp_data.write_i32::<LittleEndian>(0).unwrap();
+            bmp_data.write_u32::<BigEndian>(0x0000FF00).unwrap(); // R
+            bmp_data.write_u32::<BigEndian>(0x00FF0000).unwrap(); // G
+            bmp_data.write_u32::<BigEndian>(0xFF000000).unwrap(); // B
+            bmp_data.write_u32::<BigEndian>(0x000000FF).unwrap(); // A
+            bmp_data.write(&buf).unwrap();
+            func(&bmp_data)
         },
         nx::Type::Audio => func(node.audio().unwrap().data()),
     }
