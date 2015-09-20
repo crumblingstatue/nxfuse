@@ -57,7 +57,8 @@ impl<'a> Entries<'a> {
     /// The nx node belonging to an inode
     fn nxnode(&self, inode: u64) -> Option<nx::Node<'a>> {
         match self.vec.iter().find(|entry| {
-            entry.inodes.main == inode || match entry.inodes.opt_data {
+            entry.inodes.main == inode ||
+            match entry.inodes.opt_data {
                 Some(ino) => inode == ino,
                 None => false,
             }
@@ -121,7 +122,7 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             bmp_data.write(&[0; 0x24 + (3 * 4)]).unwrap();
             bmp_data.write(&buf).unwrap();
             func(&bmp_data)
-        },
+        }
         nx::Type::Audio => func(node.audio().unwrap().data()),
     }
 }
@@ -156,10 +157,7 @@ impl<'a> NxFilesystem<'a> {
         fs.inode_attrs.insert(FUSE_ROOT_ID, attr);
         fs.entries.push(Entry {
             nxnode: fs.nx_file.root(),
-            inodes: NodeInodes {
-                main: FUSE_ROOT_ID,
-                opt_data: None,
-            },
+            inodes: NodeInodes { main: FUSE_ROOT_ID, opt_data: None },
         });
         fs
     }
@@ -175,19 +173,14 @@ impl<'a> NxFilesystem<'a> {
             // Doesn't have inodes yet, generate and insert them
             None => {
                 let main_inode = self.new_inode();
-                let opt_data_inode = if node_has_children(node) && node.dtype() != nx::Type::Empty {
+                let opt_data_inode = if node_has_children(node) &&
+                                        node.dtype() != nx::Type::Empty {
                     Some(self.new_inode())
                 } else {
                     None
                 };
-                let inodes = NodeInodes {
-                    main: main_inode,
-                    opt_data: opt_data_inode,
-                };
-                self.entries.push(Entry {
-                    nxnode: node,
-                    inodes: inodes,
-                });
+                let inodes = NodeInodes { main: main_inode, opt_data: opt_data_inode };
+                self.entries.push(Entry { nxnode: node, inodes: inodes });
                 inodes
             }
         }
@@ -225,7 +218,9 @@ impl<'a> NxFilesystem<'a> {
                 Vacant(en) => {
                     *en.insert(FileAttr {
                         ino: inode,
-                        size: size.unwrap_or_else(|| with_node_data(node, |d| d.len()) as u64),
+                        size: size.unwrap_or_else(|| {
+                            with_node_data(node, |d| d.len()) as u64
+                        }),
                         blocks: 1,
                         atime: self.create_time,
                         mtime: self.create_time,
@@ -245,10 +240,7 @@ impl<'a> NxFilesystem<'a> {
         } else {
             None
         };
-        NodeFileAttrs {
-            main: main_attr,
-            opt_data: opt_data_attr,
-        }
+        NodeFileAttrs { main: main_attr, opt_data: opt_data_attr }
     }
 
 }
@@ -283,7 +275,8 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                                 match node.get(&name[..pos]) {
                                     Some(node) => node,
                                     None => {
-                                        debugln!("[lookup] Couldn't find node with name \"{}\"", name);
+                                        debugln!("[lookup] Couldn't find node with name \"{}\"",
+                                                 name);
                                         reply.error(ENOENT);
                                         return;
                                     }
@@ -347,7 +340,10 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                 self.node_file_attrs(child);
                 reply.add(inodes.main, (i + 1) as u64, file_type, child.name());
                 if let Some(inode) = inodes.opt_data {
-                    reply.add(inode, (i + 2) as u64, FileType::RegularFile, &[child.name(), "_data"].concat());
+                    reply.add(inode,
+                              (i + 2) as u64,
+                              FileType::RegularFile,
+                              &[child.name(), "_data"].concat());
                 }
             }
         }
