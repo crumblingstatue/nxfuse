@@ -76,6 +76,7 @@ impl<'a> Entries<'a> {
 }
 
 fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
+    debugln!("with_node_data triggered for {}", node.name());
     match node.dtype() {
         nx::Type::Empty => func(&[]),
         nx::Type::Integer => func(&node.integer().unwrap().to_string().as_bytes()),
@@ -167,43 +168,54 @@ impl<'a> NxFilesystem<'a> {
         }
     }
     fn node_file_attrs(&mut self, node: nx::Node<'a>) -> NodeFileAttrs {
+        use std::collections::hash_map::Entry::*;
         let inodes = self.node_inodes(node);
-        let size = with_node_data(node, |d| d.len());
-        let main_attr = FileAttr {
-            ino: inodes.main,
-            size: size as u64,
-            blocks: 1,
-            atime: self.create_time,
-            mtime: self.create_time,
-            ctime: self.create_time,
-            crtime: self.create_time,
-            kind: node_file_type(node),
-            perm: 0o644,
-            nlink: 1,
-            uid: 501,
-            gid: 20,
-            rdev: 0,
-            flags: 0,
+        let mut size = None;
+        let main_attr = match self.inode_attrs.entry(inodes.main) {
+            Occupied(en) => *en.get(),
+            Vacant(en) => {
+                let s = with_node_data(node, |d| d.len()) as u64;
+                size = Some(s);
+                *en.insert(FileAttr {
+                    ino: inodes.main,
+                    size: s,
+                    blocks: 1,
+                    atime: self.create_time,
+                    mtime: self.create_time,
+                    ctime: self.create_time,
+                    crtime: self.create_time,
+                    kind: node_file_type(node),
+                    perm: 0o644,
+                    nlink: 1,
+                    uid: 501,
+                    gid: 20,
+                    rdev: 0,
+                    flags: 0,
+                })
+            }
         };
-        self.inode_attrs.insert(inodes.main, main_attr);
         let opt_data_attr = if let Some(inode) = inodes.opt_data {
-            let attr = FileAttr {
-                ino: inode,
-                size: size as u64,
-                blocks: 1,
-                atime: self.create_time,
-                mtime: self.create_time,
-                ctime: self.create_time,
-                crtime: self.create_time,
-                kind: FileType::RegularFile,
-                perm: 0o644,
-                nlink: 1,
-                uid: 501,
-                gid: 20,
-                rdev: 0,
-                flags: 0,
+            let attr = match self.inode_attrs.entry(inode) {
+                Occupied(en) => *en.get(),
+                Vacant(en) => {
+                    *en.insert(FileAttr {
+                        ino: inode,
+                        size: size.unwrap_or_else(|| with_node_data(node, |d| d.len()) as u64),
+                        blocks: 1,
+                        atime: self.create_time,
+                        mtime: self.create_time,
+                        ctime: self.create_time,
+                        crtime: self.create_time,
+                        kind: FileType::RegularFile,
+                        perm: 0o644,
+                        nlink: 1,
+                        uid: 501,
+                        gid: 20,
+                        rdev: 0,
+                        flags: 0,
+                    })
+                }
             };
-            self.inode_attrs.insert(inode, attr);
             Some(attr)
         } else {
             None
