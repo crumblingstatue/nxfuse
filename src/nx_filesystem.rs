@@ -218,9 +218,7 @@ impl<'a> NxFilesystem<'a> {
                 Vacant(en) => {
                     *en.insert(FileAttr {
                         ino: inode,
-                        size: size.unwrap_or_else(|| {
-                            with_node_data(node, |d| d.len()) as u64
-                        }),
+                        size: size.unwrap_or_else(|| with_node_data(node, |d| d.len()) as u64),
                         blocks: 1,
                         atime: self.create_time,
                         mtime: self.create_time,
