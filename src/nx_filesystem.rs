@@ -293,7 +293,13 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             }
         }
         let attrs = self.node_file_attrs(node);
-        reply.entry(&TTL, &(if data_request { attrs.opt_data.unwrap() } else { attrs.main }), 0);
+        reply.entry(&TTL,
+                    &(if data_request {
+                        attrs.opt_data.unwrap()
+                    } else {
+                        attrs.main
+                    }),
+                    0);
     }
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
         match self.inode_attrs.get(&ino) {
