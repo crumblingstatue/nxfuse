@@ -157,7 +157,10 @@ impl<'a> NxFilesystem<'a> {
         fs.inode_attrs.insert(FUSE_ROOT_ID, attr);
         fs.entries.push(Entry {
             nxnode: fs.nx_file.root(),
-            inodes: NodeInodes { main: FUSE_ROOT_ID, opt_data: None },
+            inodes: NodeInodes {
+                main: FUSE_ROOT_ID,
+                opt_data: None,
+            },
         });
         fs
     }
@@ -179,8 +182,14 @@ impl<'a> NxFilesystem<'a> {
                 } else {
                     None
                 };
-                let inodes = NodeInodes { main: main_inode, opt_data: opt_data_inode };
-                self.entries.push(Entry { nxnode: node, inodes: inodes });
+                let inodes = NodeInodes {
+                    main: main_inode,
+                    opt_data: opt_data_inode,
+                };
+                self.entries.push(Entry {
+                    nxnode: node,
+                    inodes: inodes,
+                });
                 inodes
             }
         }
@@ -238,7 +247,10 @@ impl<'a> NxFilesystem<'a> {
         } else {
             None
         };
-        NodeFileAttrs { main: main_attr, opt_data: opt_data_attr }
+        NodeFileAttrs {
+            main: main_attr,
+            opt_data: opt_data_attr,
+        }
     }
 
 }
@@ -318,13 +330,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
         let node = self.entries
                        .nxnode(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
-        with_node_data(node,
-                       |data| {
-                           let from = offset as usize;
-                           let to = ::std::cmp::min(from + size as usize, data.len());
-                           debugln!("from {}, to {}, data.len {}", from, to, data.len());
-                           reply.data(&data[from..to]);
-                       });
+        with_node_data(node, |data| {
+            let from = offset as usize;
+            let to = ::std::cmp::min(from + size as usize, data.len());
+            debugln!("from {}, to {}, data.len {}", from, to, data.len());
+            reply.data(&data[from..to]);
+        });
     }
     fn readdir(&mut self,
                _req: &Request,
