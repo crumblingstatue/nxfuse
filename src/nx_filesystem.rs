@@ -76,7 +76,6 @@ impl<'a> Entries<'a> {
 }
 
 fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
-    debugln!("with_node_data triggered for {}", node.name());
     match node.dtype() {
         nx::Type::Empty => func(&[]),
         nx::Type::Integer => func(&node.integer().unwrap().to_string().as_bytes()),
@@ -285,15 +284,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                                 match node.get(&name[..pos]) {
                                     Some(node) => node,
                                     None => {
-                                        debugln!("[lookup] Couldn't find node with name \"{}\"",
-                                                 name);
                                         reply.error(ENOENT);
                                         return;
                                     }
                                 }
                             }
                             None => {
-                                debugln!("[lookup] Couldn't find node with name \"{}\"", name);
                                 reply.error(ENOENT);
                                 return;
                             }
@@ -326,14 +322,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             offset: u64,
             size: u32,
             reply: ReplyData) {
-        debugln!("[read] ino: {}, offset: {}, size: {}", ino, offset, size);
         let node = self.entries
                        .nxnode(ino)
                        .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         with_node_data(node, |data| {
             let from = offset as usize;
             let to = ::std::cmp::min(from + size as usize, data.len());
-            debugln!("from {}, to {}, data.len {}", from, to, data.len());
             reply.data(&data[from..to]);
         });
     }
@@ -343,7 +337,6 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                _fh: u64,
                offset: u64,
                mut reply: ReplyDirectory) {
-        debugln!("[readdir] ino: {}, offset: {}", ino, offset);
         if offset == 0 {
             let node_to_read = self.entries
                                    .nxnode(ino)
