@@ -328,6 +328,9 @@ impl<'a> Filesystem for NxFilesystem<'a> {
         with_node_data(node, |data| {
             let from = offset as usize;
             let to = ::std::cmp::min(from + size as usize, data.len());
+            // Don't crash if from > to.
+            // Don't know why this can occur though.
+            let from = ::std::cmp::min(from, to);
             reply.data(&data[from..to]);
         });
     }
