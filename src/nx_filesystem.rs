@@ -251,7 +251,6 @@ impl<'a> NxFilesystem<'a> {
             opt_data: opt_data_attr,
         }
     }
-
 }
 
 fn node_has_children(node: nx::Node) -> bool {
