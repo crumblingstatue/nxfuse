@@ -260,9 +260,10 @@ fn node_has_children(node: nx::Node) -> bool {
 const TTL: Timespec = Timespec { sec: 1, nsec: 0 };
 
 fn node_file_type(node: nx::Node) -> FileType {
-    match node_has_children(node) {
-        true => FileType::Directory,
-        false => FileType::RegularFile,
+    if node_has_children(node) {
+        FileType::Directory
+    } else {
+        FileType::RegularFile
     }
 }
 
