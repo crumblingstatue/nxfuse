@@ -21,11 +21,12 @@ struct Entry<'a> {
     nxnode: nx::Node<'a>,
 }
 
+#[derive(Default)]
 struct Entries<'a> {
     vec: Vec<Entry<'a>>,
 }
 
-/// Inodes of an nx::Node
+/// Inodes of an `nx::Node`
 #[derive(Clone, Copy)]
 struct NodeInodes {
     /// The main inode.
@@ -41,16 +42,13 @@ struct NodeInodes {
     opt_data: Option<u64>,
 }
 
-/// File attributes of an nx::Node
+/// File attributes of an `nx::Node`
 struct NodeFileAttrs {
     main: FileAttr,
     opt_data: Option<FileAttr>,
 }
 
 impl<'a> Entries<'a> {
-    fn new() -> Self {
-        Entries { vec: Vec::new() }
-    }
     fn push(&mut self, pair: Entry<'a>) {
         self.vec.push(pair);
     }
@@ -128,7 +126,7 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
 
 impl<'a> NxFilesystem<'a> {
     pub fn new_with_nx_file(nx_file: &'a nx::File) -> Self {
-        let pairs = Entries::new();
+        let pairs = Entries::default();
         let mut fs = NxFilesystem {
             nx_file: nx_file,
             entries: pairs,
