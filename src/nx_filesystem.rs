@@ -321,8 +321,8 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             size: u32,
             reply: ReplyData) {
         let node = self.entries
-                       .nxnode(ino)
-                       .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
+            .nxnode(ino)
+            .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
         with_node_data(node, |data| {
             let from = offset as usize;
             let to = ::std::cmp::min(from + size as usize, data.len());
@@ -340,8 +340,8 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                mut reply: ReplyDirectory) {
         if offset == 0 {
             let node_to_read = self.entries
-                                   .nxnode(ino)
-                                   .expect("Trying to read nonexistent dir");
+                .nxnode(ino)
+                .expect("Trying to read nonexistent dir");
             for (i, child) in node_to_read.iter().enumerate() {
                 let file_type = node_file_type(child);
                 let inodes = self.node_inodes(child);
