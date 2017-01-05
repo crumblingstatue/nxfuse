@@ -76,8 +76,8 @@ impl<'a> Entries<'a> {
 fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
     match node.dtype() {
         nx::Type::Empty => func(&[]),
-        nx::Type::Integer => func(&node.integer().unwrap().to_string().as_bytes()),
-        nx::Type::Float => func(&node.float().unwrap().to_string().as_bytes()),
+        nx::Type::Integer => func(node.integer().unwrap().to_string().as_bytes()),
+        nx::Type::Float => func(node.float().unwrap().to_string().as_bytes()),
         nx::Type::String => func(node.string().unwrap().as_bytes()),
         nx::Type::Vector => {
             let (x, y) = node.vector().unwrap();
