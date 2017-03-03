@@ -94,7 +94,7 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             let size_bytes = offset + len;
             let mut bmp_data = Vec::<u8>::with_capacity(size_bytes as usize);
             // Write bmp header
-            bmp_data.write(&[0x42, 0x4D]).unwrap();
+            bmp_data.write_all(&[0x42, 0x4D]).unwrap();
             bmp_data.write_u32::<LittleEndian>(size_bytes).unwrap();
             // Zero out the reserved section
             bmp_data.write_u32::<LittleEndian>(0).unwrap();
@@ -115,9 +115,9 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             bmp_data.write_u32::<BigEndian>(0x00FF0000).unwrap(); // G
             bmp_data.write_u32::<BigEndian>(0xFF000000).unwrap(); // B
             bmp_data.write_u32::<BigEndian>(0x000000FF).unwrap(); // A
-            bmp_data.write(&[0x20, 0x6E, 0x69, 0x57]).unwrap();
-            bmp_data.write(&[0; 0x24 + (3 * 4)]).unwrap();
-            bmp_data.write(&buf).unwrap();
+            bmp_data.write_all(&[0x20, 0x6E, 0x69, 0x57]).unwrap();
+            bmp_data.write_all(&[0; 0x24 + (3 * 4)]).unwrap();
+            bmp_data.write_all(&buf).unwrap();
             func(&bmp_data)
         }
         nx::Type::Audio => func(node.audio().unwrap().data()),
