@@ -102,10 +102,10 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             // Write bitmapinfoheader
             bmp_data.write_u32::<LittleEndian>(header_size).unwrap();
             bmp_data
-                .write_i32::<LittleEndian>(bitmap.width() as i32)
+                .write_i32::<LittleEndian>(i32::from(bitmap.width()))
                 .unwrap();
             bmp_data
-                .write_i32::<LittleEndian>(-(bitmap.height() as i32))
+                .write_i32::<LittleEndian>(-i32::from(bitmap.height()))
                 .unwrap();
             bmp_data.write_u16::<LittleEndian>(1).unwrap();
             bmp_data.write_u16::<LittleEndian>(32).unwrap();
@@ -115,10 +115,10 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             bmp_data.write_i32::<LittleEndian>(2835).unwrap();
             bmp_data.write_i32::<LittleEndian>(0).unwrap();
             bmp_data.write_i32::<LittleEndian>(0).unwrap();
-            bmp_data.write_u32::<BigEndian>(0x0000FF00).unwrap(); // R
-            bmp_data.write_u32::<BigEndian>(0x00FF0000).unwrap(); // G
-            bmp_data.write_u32::<BigEndian>(0xFF000000).unwrap(); // B
-            bmp_data.write_u32::<BigEndian>(0x000000FF).unwrap(); // A
+            bmp_data.write_u32::<BigEndian>(0x0000_FF00).unwrap(); // R
+            bmp_data.write_u32::<BigEndian>(0x00FF_0000).unwrap(); // G
+            bmp_data.write_u32::<BigEndian>(0xFF00_0000).unwrap(); // B
+            bmp_data.write_u32::<BigEndian>(0x0000_00FF).unwrap(); // A
             bmp_data.write_all(&[0x20, 0x6E, 0x69, 0x57]).unwrap();
             bmp_data.write_all(&[0; 0x24 + (3 * 4)]).unwrap();
             bmp_data.write_all(&buf).unwrap();
