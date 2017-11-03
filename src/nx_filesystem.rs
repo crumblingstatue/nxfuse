@@ -1,11 +1,11 @@
-use fuse::{Filesystem, Request, ReplyEntry, ReplyDirectory, ReplyData, ReplyAttr, FileType,
-           FileAttr, FUSE_ROOT_ID};
-use std::path::{Path, Component};
+use fuse::{FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry,
+           Request, FUSE_ROOT_ID};
+use std::path::{Component, Path};
 use libc::ENOENT;
 use nx::{self, GenericNode};
 use time::{self, Timespec};
 use std::collections::HashMap;
-use byteorder::{LittleEndian, BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use std::ffi::OsStr;
 
 pub struct NxFilesystem<'a> {
@@ -56,8 +56,7 @@ impl<'a> Entries<'a> {
     /// The nx node belonging to an inode
     fn nxnode(&self, inode: u64) -> Option<nx::Node<'a>> {
         match self.vec.iter().find(|entry| {
-            entry.inodes.main == inode ||
-            match entry.inodes.opt_data {
+            entry.inodes.main == inode || match entry.inodes.opt_data {
                 Some(ino) => inode == ino,
                 None => false,
             }
@@ -102,8 +101,12 @@ fn with_node_data<R, T: FnOnce(&[u8]) -> R>(node: nx::Node, func: T) -> R {
             bmp_data.write_u32::<LittleEndian>(offset).unwrap();
             // Write bitmapinfoheader
             bmp_data.write_u32::<LittleEndian>(header_size).unwrap();
-            bmp_data.write_i32::<LittleEndian>(bitmap.width() as i32).unwrap();
-            bmp_data.write_i32::<LittleEndian>(-(bitmap.height() as i32)).unwrap();
+            bmp_data
+                .write_i32::<LittleEndian>(bitmap.width() as i32)
+                .unwrap();
+            bmp_data
+                .write_i32::<LittleEndian>(-(bitmap.height() as i32))
+                .unwrap();
             bmp_data.write_u16::<LittleEndian>(1).unwrap();
             bmp_data.write_u16::<LittleEndian>(32).unwrap();
             bmp_data.write_u32::<LittleEndian>(3).unwrap();
@@ -174,8 +177,7 @@ impl<'a> NxFilesystem<'a> {
             // Doesn't have inodes yet, generate and insert them
             None => {
                 let main_inode = self.new_inode();
-                let opt_data_inode = if node_has_children(node) &&
-                                        node.dtype() != nx::Type::Empty {
+                let opt_data_inode = if node_has_children(node) && node.dtype() != nx::Type::Empty {
                     Some(self.new_inode())
                 } else {
                     None
@@ -222,24 +224,22 @@ impl<'a> NxFilesystem<'a> {
         let opt_data_attr = if let Some(inode) = inodes.opt_data {
             let attr = match self.inode_attrs.entry(inode) {
                 Occupied(en) => *en.get(),
-                Vacant(en) => {
-                    *en.insert(FileAttr {
-                        ino: inode,
-                        size: size.unwrap_or_else(|| with_node_data(node, |d| d.len()) as u64),
-                        blocks: 1,
-                        atime: self.create_time,
-                        mtime: self.create_time,
-                        ctime: self.create_time,
-                        crtime: self.create_time,
-                        kind: FileType::RegularFile,
-                        perm: 0o644,
-                        nlink: 1,
-                        uid: 501,
-                        gid: 20,
-                        rdev: 0,
-                        flags: 0,
-                    })
-                }
+                Vacant(en) => *en.insert(FileAttr {
+                    ino: inode,
+                    size: size.unwrap_or_else(|| with_node_data(node, |d| d.len()) as u64),
+                    blocks: 1,
+                    atime: self.create_time,
+                    mtime: self.create_time,
+                    ctime: self.create_time,
+                    crtime: self.create_time,
+                    kind: FileType::RegularFile,
+                    perm: 0o644,
+                    nlink: 1,
+                    uid: 501,
+                    gid: 20,
+                    rdev: 0,
+                    flags: 0,
+                }),
             };
             Some(attr)
         } else {
@@ -268,7 +268,9 @@ fn node_file_type(node: nx::Node) -> FileType {
 
 impl<'a> Filesystem for NxFilesystem<'a> {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
-        let mut node = self.entries.nxnode(parent).expect("[lookup] Invalid parent");
+        let mut node = self.entries
+            .nxnode(parent)
+            .expect("[lookup] Invalid parent");
         let mut data_request = false;
         let name: &Path = name.as_ref();
         for c in name.components() {
@@ -301,13 +303,15 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             }
         }
         let attrs = self.node_file_attrs(node);
-        reply.entry(&TTL,
-                    &(if data_request {
-                        attrs.opt_data.unwrap()
-                    } else {
-                        attrs.main
-                    }),
-                    0);
+        reply.entry(
+            &TTL,
+            &(if data_request {
+                attrs.opt_data.unwrap()
+            } else {
+                attrs.main
+            }),
+            0,
+        );
     }
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
         match self.inode_attrs.get(&ino) {
@@ -315,13 +319,15 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             None => panic!("Could not get attribute for inode {}", ino),
         }
     }
-    fn read(&mut self,
-            _req: &Request,
-            ino: u64,
-            _fh: u64,
-            offset: u64,
-            size: u32,
-            reply: ReplyData) {
+    fn read(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        _fh: u64,
+        offset: u64,
+        size: u32,
+        reply: ReplyData,
+    ) {
         let node = self.entries
             .nxnode(ino)
             .unwrap_or_else(|| panic!("[read] No node with inode {} exists.", ino));
@@ -334,12 +340,14 @@ impl<'a> Filesystem for NxFilesystem<'a> {
             reply.data(&data[from..to]);
         });
     }
-    fn readdir(&mut self,
-               _req: &Request,
-               ino: u64,
-               _fh: u64,
-               offset: u64,
-               mut reply: ReplyDirectory) {
+    fn readdir(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        _fh: u64,
+        offset: u64,
+        mut reply: ReplyDirectory,
+    ) {
         if offset == 0 {
             let node_to_read = self.entries
                 .nxnode(ino)
@@ -351,10 +359,12 @@ impl<'a> Filesystem for NxFilesystem<'a> {
                 self.node_file_attrs(child);
                 reply.add(inodes.main, (i + 1) as u64, file_type, child.name());
                 if let Some(inode) = inodes.opt_data {
-                    reply.add(inode,
-                              (i + 2) as u64,
-                              FileType::RegularFile,
-                              &[child.name(), "_data"].concat());
+                    reply.add(
+                        inode,
+                        (i + 2) as u64,
+                        FileType::RegularFile,
+                        &[child.name(), "_data"].concat(),
+                    );
                 }
             }
         }
