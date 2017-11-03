@@ -6,6 +6,7 @@ use nx::{self, GenericNode};
 use time::{self, Timespec};
 use std::collections::HashMap;
 use byteorder::{LittleEndian, BigEndian, WriteBytesExt};
+use std::ffi::OsStr;
 
 pub struct NxFilesystem<'a> {
     nx_file: &'a nx::File,
@@ -266,9 +267,10 @@ fn node_file_type(node: nx::Node) -> FileType {
 }
 
 impl<'a> Filesystem for NxFilesystem<'a> {
-    fn lookup(&mut self, _req: &Request, parent: u64, name: &Path, reply: ReplyEntry) {
+    fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
         let mut node = self.entries.nxnode(parent).expect("[lookup] Invalid parent");
         let mut data_request = false;
+        let name: &Path = name.as_ref();
         for c in name.components() {
             if let Component::Normal(name) = c {
                 let name = name.to_str().expect("Path component not valid utf-8");
